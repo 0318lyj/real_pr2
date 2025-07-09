@@ -222,6 +222,7 @@
     }
   </style>
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 </head>
 
@@ -827,7 +828,10 @@
                   return;
                 }
                 
-                // 헤더 데이터 설정
+                // ==========================================================
+                // ★★★★★★★★★★★★★★★★★★★★★ FIX START ★★★★★★★★★★★★★★★★★★★★★
+                // ==========================================================
+                // 1. Update the grid data model
                 targetNode.setDataValue('customerCd', customerCd);
                 targetNode.setDataValue('customerNm', customerNm);
                 targetNode.setDataValue('representativeNm', representativeNm);
@@ -837,8 +841,18 @@
                 targetNode.setDataValue('paymentTerms', paymentTerms);
                 targetNode.setDataValue('orderWriter', orderWriter);
                 
-                // currentOrder 업데이트
-                currentOrder = targetNode.data;
+                // 2. Explicitly update the global state variable `currentOrder`
+                currentOrder.customerCd = customerCd;
+                currentOrder.customerNm = customerNm;
+                currentOrder.representativeNm = representativeNm;
+                currentOrder.phoneNo = phoneNo;
+                currentOrder.salesEmpCd = salesEmpCd;
+                currentOrder.discountRate = discountRate;
+                currentOrder.paymentTerms = paymentTerms;
+                currentOrder.orderWriter = orderWriter;
+                // ==========================================================
+                // ★★★★★★★★★★★★★★★★★★★★★★ FIX END ★★★★★★★★★★★★★★★★★★★★★★
+                // ==========================================================
                 
                 console.log('헤더 설정 완료:', currentOrder);
               } else {
