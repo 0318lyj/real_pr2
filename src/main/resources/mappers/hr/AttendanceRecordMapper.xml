@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- ============================================
+  - 작성자   : 김어진
+  - 최초작성 : 2025-06-20
+  - 설명     : AttendanceRecordsMapper query xml
+  [ 변경 이력 ]
+  - 2025-06-19 (김어진): 사원 전체조회 작성
+=============================================== -->
+<mapper namespace="com.eflix.hr.mapper.AttendanceRecordMapper">
+  <!-- 근태 전체조회-->
+  <select id="getAllRecords" resultType="AttendanceRecordDTO">
+  SELECT *
+  FROM attendance_records
+  </select>
+
+  <!--근태현황 상세조회-->
+  <select id="getRecordsByEmpId"
+          parameterType="AttendanceRecordDTO"
+          resultType="AttendanceRecordDTO">
+    <![CDATA[
+      SELECT
+        ar.attd_date AS attd_date,
+        ar.hd_idx,
+        ar.attd_status,
+        TO_CHAR(ar.attd_time,  'HH24:MI') AS attd_time,
+        TO_CHAR(ar.attd_start, 'HH24:MI') AS attd_start,
+        TO_CHAR(ar.attd_end,   'HH24:MI') AS attd_end,
+        CASE
+          WHEN (ar.attd_end - ar.attd_start) > (8/24)
+          THEN
+            FLOOR((ar.attd_end - ar.attd_start)*24 - 8)
+            || '시간 '
+            || LPAD(
+                TO_CHAR(
+                  FLOOR(
+                    MOD((ar.attd_end - ar.attd_start)*24 - 8,1) * 60
+                  )
+                ), 2, '0')
+            || '분'
+          ELSE NULL
+        END AS overtime
+      FROM attendance_records ar
+      WHERE ar.emp_idx = #{empIdx}
+        AND ar.attd_date BETWEEN #{attdStart} AND #{attdEnd}
+        AND ar.co_idx = #{coIdx}
+      ORDER BY ar.attd_date
+    ]]>
+  </select>
+
+  <select id="getJoinDate" parameterType="String" resultType="java.time.LocalDate">
+    SELECT 
+      TRUNC(e.emp_regdate) AS emp_regdate
+    FROM employees e
+    WHERE e.emp_idx = #{empIdx}
+      AND e.co_idx  = #{coIdx}
+  </select>
+  <!-- 로그인 사원 기본정보 조회-->
+  <select id="getBasicInfo" resultType="AttendanceRecordDTO">
+  SELECT 
+    ar.attd_date,
+    h.hd_date AS hd_date,
+    h.hd_type AS hd_type,
+    e.leave_all_days AS leave_all_days,
+    e.leave_days AS leave_days
+  FROM attendance_records ar
+  LEFT JOIN employees e ON ar.emp_idx = e.emp_idx
+  LEFT JOIN holiday h ON ar.hd_idx = h.hd_idx
+  WHERE e.emp_idx = #{empIdx} AND e.co_idx = #{coIdx} AND ar.attd_date BETWEEN #{attdStart} AND #{attdEnd}
+  </select>
+
+  <!-- 근태관리 조회 -->
+  <select id="managerSearch" parameterType="map" resultType="AttendanceRecordDTO">
+  SELECT DISTINCT
+    e.emp_name,
+    ar.attd_status,
+    d.dept_name,
+    e.emp_grade
+  FROM employees e
+  LEFT JOIN attendance_records ar ON e.emp_idx = ar.emp_idx
+  LEFT JOIN departments d ON e.dept_idx = d.dept_idx
+  <where>
+    <!-- '사원명' 필터링 -->
+    <if test="empName != null and empName != ''">
+      AND e.emp_name LIKE '%' || #{empName} || '%'
+    </if>
+    <!-- 예: 추가로 상태나 부서, 등급 필터가 필요하면 아래처럼 더 넣을 수 있음 -->
+    <if test="attdStatus != null and attdStatus != ''">
+      AND ar.attd_status = #{attdStatus}
+    </if>
+    <if test="deptName != null and deptName != ''">
+      AND d.dept_name LIKE '%' || #{deptName} || '%'
+    </if>
+    <if test="empGrade != null and empGrade != ''">
+      AND e.emp_grade = #{empGrade}
+    </if>
+  </where>
+  </select>
+</mapper>
